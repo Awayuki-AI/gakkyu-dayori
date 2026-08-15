@@ -186,53 +186,53 @@
   user-select: none;
 }
 
-/* 1つ目ボックス：赤テープ右上（アスペクト比維持・150%） */
+/* 1つ目ボックス：赤テープ右上（控えめなコーナー留め） */
 .deco-tape-red {
-  top: -38px;
-  right: -16px;
-  width: 138px; /* 92px × 1.5 */
+  top: -22px;
+  right: -10px;
+  width: 82px;
   height: auto;
   transform: rotate(12deg);
-  opacity: 0.95;
+  opacity: 0.82;
 }
 
-/* 1つ目ボックス：鉛筆右下（アスペクト比維持・150%） */
+/* 1つ目ボックス：鉛筆右下（文具デコの中では主役） */
 .deco-pencil {
   right: -2px;
   bottom: -4px;
-  width: 87px; /* 58px × 1.5 */
+  width: 87px;
   height: auto;
   transform: rotate(-6deg);
 }
 
-/* 1つ目ボックス：消しゴム左下（200%、ボックス内） */
+/* 1つ目ボックス：消しゴム左下 */
 .deco-eraser {
-  left: -14px;
-  bottom: -12px;
-  width: 96px; /* 48px × 2 */
+  left: -8px;
+  bottom: -6px;
+  width: 52px;
   height: auto;
   transform: rotate(-18deg);
-  opacity: 0.96;
+  opacity: 0.86;
 }
 
-/* 2つ目ボックス：緑テープ左下（ピンクと同サイズ・同程度のはみ出し） */
+/* 2つ目ボックス：緑テープ左下 */
 .deco-tape-green {
-  left: -16px;
-  bottom: -38px;
-  width: 138px;
+  left: -10px;
+  bottom: -22px;
+  width: 82px;
   height: auto;
   transform: rotate(12deg);
-  opacity: 0.95;
+  opacity: 0.82;
 }
 
-/* 2つ目ボックス：三角定規右下（トピック1の文具デコと存在感を揃える） */
+/* 2つ目ボックス：三角定規右下 */
 .deco-triangle {
-  right: -6px;
-  bottom: -10px;
-  width: 96px;
+  right: -4px;
+  bottom: -6px;
+  width: 54px;
   height: auto;
   transform: none;
-  opacity: 0.98;
+  opacity: 0.86;
 }
 
 

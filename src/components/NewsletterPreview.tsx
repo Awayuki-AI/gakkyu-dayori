@@ -11,6 +11,7 @@ type Props = {
   draggingPhotoId: string | null;
   onDragStart: (photoId: string, sectionId: string) => void;
   onDropOnSection: (sectionId: string, targetPhotoId: string | null) => void;
+  onAddPhotos: (files: FileList | File[], sectionId: string) => void;
 };
 
 export function NewsletterPreview({
@@ -23,6 +24,7 @@ export function NewsletterPreview({
   draggingPhotoId,
   onDragStart,
   onDropOnSection,
+  onAddPhotos,
 }: Props) {
   const showAnnouncement =
     includeAnnouncement &&
@@ -77,7 +79,13 @@ export function NewsletterPreview({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
-                  onDropOnSection(section.id, null);
+                  if (draggingPhotoId) {
+                    onDropOnSection(section.id, null);
+                    return;
+                  }
+                  if (e.dataTransfer.files?.length) {
+                    onAddPhotos(Array.from(e.dataTransfer.files), section.id);
+                  }
                 }}
               >
                 {index === 0 && (
@@ -135,12 +143,28 @@ export function NewsletterPreview({
                             key={photo.id}
                             className={`photo-cell ${draggingPhotoId === photo.id ? "dragging" : ""}`}
                             draggable
-                            onDragStart={() => onDragStart(photo.id, section.id)}
+                            onDragStart={(e) => {
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData(
+                                "text/plain",
+                                photo.id,
+                              );
+                              onDragStart(photo.id, section.id);
+                            }}
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              onDropOnSection(section.id, photo.id);
+                              if (draggingPhotoId) {
+                                onDropOnSection(section.id, photo.id);
+                                return;
+                              }
+                              if (e.dataTransfer.files?.length) {
+                                onAddPhotos(
+                                  Array.from(e.dataTransfer.files),
+                                  section.id,
+                                );
+                              }
                             }}
                           >
                             <img src={photo.objectUrl} alt="" />

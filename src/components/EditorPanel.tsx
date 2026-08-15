@@ -1,7 +1,9 @@
+import { useRef, useState } from "react";
 import type {
   AccentSeason,
   Announcement,
   Issue,
+  Photo,
   Settings,
   TopicSection,
 } from "../types";
@@ -10,6 +12,7 @@ type Props = {
   settings: Settings;
   issue: Issue;
   sections: TopicSection[];
+  photos: Record<string, Photo>;
   includeAnnouncement: boolean;
   announcement: Announcement;
   onSettingsChange: (next: Settings) => void;
@@ -29,10 +32,181 @@ const fieldClass =
   "mt-1 w-full rounded-lg border border-[#c5d3de] bg-white px-2.5 py-2 text-[0.9rem] text-ink outline-none focus:border-[#3b82c4]";
 const labelClass = "mb-2.5 block text-[0.82rem] text-muted";
 
+function PhotoPicker({
+  sectionId,
+  onAddPhotos,
+}: {
+  sectionId: string;
+  onAddPhotos: (files: FileList | File[], sectionId: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function applyFiles(fileList: FileList | File[] | null) {
+    if (!fileList) return;
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+    onAddPhotos(files, sectionId);
+  }
+
+  return (
+    <div
+      className={labelClass}
+      onDragOver={(e) => {
+        if ([...e.dataTransfer.types].includes("Files")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }
+      }}
+      onDrop={(e) => {
+        if (![...e.dataTransfer.types].includes("Files")) return;
+        e.preventDefault();
+        applyFiles(e.dataTransfer.files);
+      }}
+    >
+      写真を追加（複数可）
+      <button
+        type="button"
+        className={`${fieldClass} cursor-pointer text-left font-medium text-[#3b82c4]`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          inputRef.current?.click();
+        }}
+      >
+        ファイルを選ぶ
+      </button>
+      <input
+        ref={inputRef}
+        className="sr-only"
+        type="file"
+        accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif,.jfif"
+        multiple
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          const files = e.target.files ? Array.from(e.target.files) : [];
+          e.target.value = "";
+          applyFiles(files);
+        }}
+      />
+      <p className="mt-1 text-xs text-muted">
+        JPEG / PNG / HEIC（iPhone）に対応。ここにドロップもできます。
+      </p>
+    </div>
+  );
+}
+
+function TopicEditor({
+  section,
+  index,
+  photos,
+  canRemove,
+  onSectionChange,
+  onAddPhotos,
+  onRemovePhoto,
+  onRemoveSection,
+}: {
+  section: TopicSection;
+  index: number;
+  photos: Record<string, Photo>;
+  canRemove: boolean;
+  onSectionChange: (id: string, patch: Partial<TopicSection>) => void;
+  onAddPhotos: (files: FileList | File[], sectionId: string) => void;
+  onRemovePhoto: (sectionId: string, photoId: string) => void;
+  onRemoveSection: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(index === 0);
+
+  return (
+    <details
+      className="rounded-xl border border-[#c5d3de] bg-[#f3f6f8] p-3"
+      open={open}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
+      <summary className="mb-2 cursor-pointer font-heading font-bold text-[#3b82c4]">
+        トピック {index + 1}
+      </summary>
+      <label className={labelClass}>
+        見出し
+        <input
+          className={fieldClass}
+          value={section.title}
+          onChange={(e) =>
+            onSectionChange(section.id, { title: e.target.value })
+          }
+          placeholder="例: 理科の実験！"
+        />
+      </label>
+      <label className={labelClass}>
+        本文
+        <textarea
+          className={`${fieldClass} resize-y`}
+          rows={4}
+          value={section.body}
+          onChange={(e) =>
+            onSectionChange(section.id, { body: e.target.value })
+          }
+          placeholder="保護者向けの短い説明"
+        />
+      </label>
+      <label className={labelClass}>
+        カード色味
+        <select
+          className={fieldClass}
+          value={section.tone}
+          onChange={(e) =>
+            onSectionChange(section.id, {
+              tone: e.target.value as TopicSection["tone"],
+            })
+          }
+        >
+          <option value="cream">グレー（テンプレ上段）</option>
+          <option value="lavender">ミント（テンプレ下段）</option>
+          <option value="peach">ベージュ</option>
+        </select>
+      </label>
+      <PhotoPicker sectionId={section.id} onAddPhotos={onAddPhotos} />
+      {section.photoIds.length > 0 && (
+        <ul className="mb-2 flex list-none flex-col gap-1.5 p-0">
+          {section.photoIds.map((id) => (
+            <li
+              key={id}
+              className="flex items-center justify-between gap-2 rounded-lg border border-[#c5d3de] bg-white px-2 py-1 text-[0.8rem]"
+            >
+              <span className="truncate">
+                {photos[id]?.name ?? `写真 ${id.slice(-4)}`}
+              </span>
+              <button
+                type="button"
+                className="shrink-0 rounded-full border border-[#c5d3de] px-2 py-0.5 text-xs hover:border-[#3b82c4]"
+                onClick={() => onRemovePhoto(section.id, id)}
+              >
+                削除
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="m-0 text-xs text-muted">
+        プレビュー上で写真をドラッグすると並べ替えできます。
+      </p>
+      {canRemove && (
+        <button
+          type="button"
+          className="mt-2 w-full rounded-full border border-red-200 px-3 py-2 text-[#a55] hover:bg-red-50"
+          onClick={() => onRemoveSection(section.id)}
+        >
+          このトピックを削除
+        </button>
+      )}
+    </details>
+  );
+}
+
 export function EditorPanel({
   settings,
   issue,
   sections,
+  photos,
   includeAnnouncement,
   announcement,
   onSettingsChange,
@@ -148,100 +322,17 @@ export function EditorPanel({
       </details>
 
       {sections.map((section, index) => (
-        <details
+        <TopicEditor
           key={section.id}
-          className="rounded-xl border border-[#c5d3de] bg-[#f3f6f8] p-3"
-          open={index === 0}
-        >
-          <summary className="mb-2 cursor-pointer font-heading font-bold text-[#3b82c4]">
-            トピック {index + 1}
-          </summary>
-          <label className={labelClass}>
-            見出し
-            <input
-              className={fieldClass}
-              value={section.title}
-              onChange={(e) =>
-                onSectionChange(section.id, { title: e.target.value })
-              }
-              placeholder="例: 理科の実験！"
-            />
-          </label>
-          <label className={labelClass}>
-            本文
-            <textarea
-              className={`${fieldClass} resize-y`}
-              rows={4}
-              value={section.body}
-              onChange={(e) =>
-                onSectionChange(section.id, { body: e.target.value })
-              }
-              placeholder="保護者向けの短い説明"
-            />
-          </label>
-          <label className={labelClass}>
-            カード色味
-            <select
-              className={fieldClass}
-              value={section.tone}
-              onChange={(e) =>
-                onSectionChange(section.id, {
-                  tone: e.target.value as TopicSection["tone"],
-                })
-              }
-            >
-              <option value="cream">グレー（テンプレ上段）</option>
-              <option value="lavender">ミント（テンプレ下段）</option>
-              <option value="peach">ベージュ</option>
-            </select>
-          </label>
-          <label className={labelClass}>
-            写真を追加（複数可）
-            <input
-              className="mt-1 block w-full text-sm"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => {
-                if (e.target.files?.length) {
-                  onAddPhotos(e.target.files, section.id);
-                  e.target.value = "";
-                }
-              }}
-            />
-          </label>
-          {section.photoIds.length > 0 && (
-            <ul className="mb-2 flex list-none flex-col gap-1.5 p-0">
-              {section.photoIds.map((id) => (
-                <li
-                  key={id}
-                  className="flex items-center justify-between rounded-lg border border-[#c5d3de] bg-white px-2 py-1 text-[0.8rem]"
-                >
-                  <span>写真 {id.slice(-4)}</span>
-                  <button
-                    type="button"
-                    className="rounded-full border border-[#c5d3de] px-2 py-0.5 text-xs hover:border-[#3b82c4]"
-                    onClick={() => onRemovePhoto(section.id, id)}
-                  >
-                    削除
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="m-0 text-xs text-muted">
-            プレビュー上で写真をドラッグすると並べ替えできます。
-          </p>
-          {sections.length > 1 && (
-            <button
-              type="button"
-              className="mt-2 w-full rounded-full border border-red-200 px-3 py-2 text-[#a55] hover:bg-red-50"
-              onClick={() => onRemoveSection(section.id)}
-            >
-              このトピックを削除
-            </button>
-          )}
-        </details>
+          section={section}
+          index={index}
+          photos={photos}
+          canRemove={sections.length > 1}
+          onSectionChange={onSectionChange}
+          onAddPhotos={onAddPhotos}
+          onRemovePhoto={onRemovePhoto}
+          onRemoveSection={onRemoveSection}
+        />
       ))}
 
       <button

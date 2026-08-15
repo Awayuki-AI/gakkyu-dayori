@@ -11,6 +11,7 @@ import type {
 } from "./types";
 import { createId, todayIsoDate } from "./utils/format";
 import { createDemoSections, demoAnnouncement } from "./utils/demo-content";
+import { fileToObjectUrl, isLikelyImageFile } from "./utils/image-file";
 import { downloadPreviewAsPdf } from "./utils/pdf";
 import "./App.css";
 
@@ -69,15 +70,36 @@ export default function App() {
     setSettings(next);
   }
 
-  function handleAddPhotos(files: FileList | File[], sectionId: string) {
-    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    if (list.length === 0) return;
+  async function handleAddPhotos(files: FileList | File[], sectionId: string) {
+    const list = Array.from(files).filter(isLikelyImageFile);
+    if (list.length === 0) {
+      alert(
+        "画像として読み込めませんでした。JPEG / PNG / HEIC（iPhoneの写真）を選んでください。",
+      );
+      return;
+    }
 
-    const added: Photo[] = list.map((file) => ({
-      id: createId("photo"),
-      objectUrl: URL.createObjectURL(file),
-      name: file.name,
-    }));
+    const added: Photo[] = [];
+    const failed: string[] = [];
+    for (const file of list) {
+      try {
+        added.push({
+          id: createId("photo"),
+          objectUrl: await fileToObjectUrl(file),
+          name: file.name,
+        });
+      } catch (err) {
+        console.error(err);
+        failed.push(file.name);
+      }
+    }
+
+    if (added.length === 0) {
+      alert(
+        "写真を追加できませんでした。拡張子が .jpg / .png / .heic のファイルか確認してください。",
+      );
+      return;
+    }
 
     setPhotos((prev) => {
       const next = { ...prev };
@@ -92,6 +114,10 @@ export default function App() {
           : s,
       ),
     );
+
+    if (failed.length > 0) {
+      alert(`一部の写真を追加できませんでした:\n${failed.join("\n")}`);
+    }
   }
 
   function handleRemovePhoto(sectionId: string, photoId: string) {
@@ -199,6 +225,7 @@ export default function App() {
         settings={settings}
         issue={issue}
         sections={sections}
+        photos={photos}
         includeAnnouncement={includeAnnouncement}
         announcement={announcement}
         onSettingsChange={handleSettingsChange}
@@ -227,6 +254,7 @@ export default function App() {
           draggingPhotoId={dragState?.photoId ?? null}
           onDragStart={handleDragStart}
           onDropOnSection={handleDropOnSection}
+          onAddPhotos={handleAddPhotos}
         />
       </main>
     </div>
