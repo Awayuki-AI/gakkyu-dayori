@@ -12,7 +12,16 @@ import type {
 import { createId, todayIsoDate } from "./utils/format";
 import { createDemoSections, demoAnnouncement } from "./utils/demo-content";
 import { fileToObjectUrl, isLikelyImageFile } from "./utils/image-file";
-import { downloadPreviewAsPdf } from "./utils/pdf";
+import {
+  ensureGoogleDriveLogin,
+  isLikelyEmail,
+  isLikelyGoogleClientId,
+  preloadGoogleIdentity,
+  resolveGoogleClientId,
+  shareDriveFileWithEmail,
+  uploadPdfToDrive,
+} from "./utils/google-drive";
+import { downloadPreviewAsPdf, previewToPdfBlob } from "./utils/pdf";
 import "./App.css";
 
 function createSection(
@@ -55,6 +64,10 @@ export default function App() {
   useEffect(() => {
     saveSettings(settings);
   }, [settings]);
+
+  useEffect(() => {
+    preloadGoogleIdentity();
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -219,6 +232,80 @@ export default function App() {
     }
   }
 
+  async function handleSaveToDrive() {
+    const clientId = resolveGoogleClientId(settings.googleClientId);
+    if (!isLikelyGoogleClientId(clientId)) {
+      alert(
+        "初回のみ、GoogleクライアントIDの設定が必要です。\nヘッダー・設定の欄に貼るか、やり方をこのあと案内します。",
+      );
+      return;
+    }
+
+    const node = previewRef.current?.querySelector(".sheet");
+    if (!(node instanceof HTMLElement)) return;
+
+    const ok = window.confirm(
+      "個人のGoogleアカウントでログインし、PDFをマイドライブへ保存します。学校のアドレスを設定していれば、続けて共有します。",
+    );
+    if (!ok) return;
+
+    const login = ensureGoogleDriveLogin(clientId);
+    setExporting(true);
+    try {
+      await login;
+      const pdfFilename = `${settings.seriesTitle}_NO${issue.issueNumber}.pdf`;
+      const pdfBlob = await previewToPdfBlob(node);
+      const saved = await uploadPdfToDrive({
+        clientId,
+        filename: pdfFilename,
+        pdfBlob,
+      });
+
+      setSettings((s) => ({
+        ...s,
+        nextIssueNumber: Math.max(s.nextIssueNumber, issue.issueNumber + 1),
+      }));
+
+      const shareTo = settings.schoolEmail.trim();
+      let shared = false;
+      if (isLikelyEmail(shareTo)) {
+        try {
+          await shareDriveFileWithEmail({
+            fileId: saved.id,
+            email: shareTo,
+          });
+          shared = true;
+        } catch (shareErr) {
+          console.error(shareErr);
+        }
+      }
+
+      if (saved.webViewLink) {
+        window.open(saved.webViewLink, "_blank", "noopener,noreferrer");
+      }
+      if (shared) {
+        alert(
+          `個人ドライブへ保存し、${shareTo} へ共有しました。学校アカウントの「共有アイテム」から開けます。`,
+        );
+      } else if (shareTo) {
+        alert(
+          "個人ドライブへ保存しました。学校アカウントへの自動共有はできませんでした。開いた画面の「共有」から、学校アドレスを追加してください。",
+        );
+      } else {
+        alert(
+          "個人ドライブへ保存しました。学校で使いたいときは、開いた画面の「共有」に学校アドレスを入れるか、PDFをダウンロードして学校ドライブへ上げてください。",
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      const message =
+        err instanceof Error ? err.message : "Driveへの保存に失敗しました。";
+      alert(message);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="grid min-h-screen grid-cols-[340px_1fr]">
       <EditorPanel
@@ -238,6 +325,7 @@ export default function App() {
         onAddPhotos={handleAddPhotos}
         onRemovePhoto={handleRemovePhoto}
         onExportPdf={handleExportPdf}
+        onSaveToDrive={handleSaveToDrive}
         exporting={exporting}
       />
       <main

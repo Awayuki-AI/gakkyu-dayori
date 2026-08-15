@@ -25,6 +25,7 @@ type Props = {
   onAddPhotos: (files: FileList | File[], sectionId: string) => void;
   onRemovePhoto: (sectionId: string, photoId: string) => void;
   onExportPdf: () => void;
+  onSaveToDrive: () => void;
   exporting: boolean;
 };
 
@@ -219,6 +220,7 @@ export function EditorPanel({
   onAddPhotos,
   onRemovePhoto,
   onExportPdf,
+  onSaveToDrive,
   exporting,
 }: Props) {
   return (
@@ -228,7 +230,7 @@ export function EditorPanel({
           学級便り
         </h1>
         <p className="mb-3 mt-1.5 text-[0.85rem] text-muted">
-          写真は端末内だけで処理します。外部には送りません。
+          写真は端末内だけで処理します。Drive保存のときだけ、選んだGoogleアカウントのドライブへ送ります。
         </p>
         <button
           type="button"
@@ -236,8 +238,19 @@ export function EditorPanel({
           disabled={exporting}
           className="w-full rounded-full bg-[#3b82c4] px-4 py-2.5 font-bold text-white enabled:hover:brightness-105 disabled:cursor-wait disabled:opacity-60"
         >
-          {exporting ? "PDF作成中…" : "PDFをダウンロード"}
+          {exporting ? "作成中…" : "PDFをダウンロード"}
         </button>
+        <button
+          type="button"
+          onClick={onSaveToDrive}
+          disabled={exporting}
+          className="mt-2 w-full rounded-full border border-[#3b82c4] bg-white px-4 py-2.5 font-bold text-[#3b82c4] enabled:hover:bg-[#eef6fb] disabled:cursor-wait disabled:opacity-60"
+        >
+          {exporting ? "作成中…" : "Googleドライブに保存"}
+        </button>
+        <p className="mb-0 mt-2 text-xs text-muted">
+          保存時は個人のGoogleでログインします。学校アカウントを下に入れておくと、保存後にそのアカウントへ共有します。
+        </p>
       </div>
 
       <details className="rounded-xl border border-[#c5d3de] bg-[#f3f6f8] p-3" open>
@@ -274,6 +287,36 @@ export function EditorPanel({
             }
           />
         </label>
+        <label className={labelClass}>
+          学校Googleアカウント（共有先）
+          <input
+            className={fieldClass}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="学校のGmail / Workspaceアドレス"
+            value={settings.schoolEmail}
+            onChange={(e) =>
+              onSettingsChange({ ...settings, schoolEmail: e.target.value })
+            }
+          />
+        </label>
+        <label className={labelClass}>
+          GoogleクライアントID（Drive用・初回のみ）
+          <input
+            className={fieldClass}
+            spellCheck={false}
+            placeholder="xxxx.apps.googleusercontent.com"
+            value={settings.googleClientId}
+            onChange={(e) =>
+              onSettingsChange({ ...settings, googleClientId: e.target.value })
+            }
+          />
+        </label>
+        <p className="mb-2.5 text-xs leading-relaxed text-muted">
+          Google Cloud（個人アカウント）で「Drive API」を有効にし、OAuthクライアント（ウェブ）を作り、JavaScript生成元に
+          http://localhost:5173 を入れてください。同意画面のテストユーザーに、保存に使うGoogleアカウントを追加します。
+        </p>
         <label className={labelClass}>
           日付
           <input
@@ -317,7 +360,7 @@ export function EditorPanel({
           </select>
         </label>
         <p className="m-0 text-xs text-muted">
-          学校名・学級名・シリーズ名・季節はブラウザに保存。号数はPDF出力後に+1されます。
+          学校名・学級名・シリーズ名・共有先・クライアントID・季節はブラウザに保存。号数は出力後に+1されます。
         </p>
       </details>
 

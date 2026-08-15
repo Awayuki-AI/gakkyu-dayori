@@ -27,6 +27,10 @@ export type Settings = {
   schoolName: string;
   className: string;
   nextIssueNumber: number;
+  /** 学校メール（Gmailでリンクを送るときの宛先。任意） */
+  schoolEmail: string;
+  /** Google Cloud の OAuth クライアントID（Drive保存用） */
+  googleClientId: string;
   /** seasonal accent color for the header band etc. */
   accentSeason: AccentSeason;
 };

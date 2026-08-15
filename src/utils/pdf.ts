@@ -1,12 +1,17 @@
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
-/** Render an A4 preview element to a downloadable PDF (local only). */
-export async function downloadPreviewAsPdf(
-  element: HTMLElement,
-  filename: string,
-): Promise<void> {
-  // Webフォント未読込だとタイトルの行高・位置がズレやすい
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Render the A4 preview to a PDF blob (local only). */
+export async function previewToPdfBlob(element: HTMLElement): Promise<Blob> {
   if (document.fonts?.ready) {
     await document.fonts.ready;
   }
@@ -36,5 +41,14 @@ export async function downloadPreviewAsPdf(
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, pageHeight);
-  pdf.save(filename);
+  return pdf.output("blob");
+}
+
+/** Render an A4 preview element to a downloadable PDF (local only). */
+export async function downloadPreviewAsPdf(
+  element: HTMLElement,
+  filename: string,
+): Promise<void> {
+  const blob = await previewToPdfBlob(element);
+  downloadBlob(blob, filename);
 }
