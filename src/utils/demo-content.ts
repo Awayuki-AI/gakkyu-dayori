@@ -1,5 +1,6 @@
 import type { Photo, TopicSection } from "../types";
 import { createId } from "./format";
+import { publicUrl } from "./public-url";
 
 /** デモ用の初期トピック（卒業制作の見栄え用） */
 export function createDemoSections(): {
@@ -14,12 +15,12 @@ export function createDemoSections(): {
   const p6 = createId("photo");
 
   const photos: Record<string, Photo> = {
-    [p1]: { id: p1, objectUrl: "/sample/photo-1.svg", name: "sample-1.svg" },
-    [p2]: { id: p2, objectUrl: "/sample/photo-2.svg", name: "sample-2.svg" },
-    [p3]: { id: p3, objectUrl: "/sample/photo-3.svg", name: "sample-3.svg" },
-    [p4]: { id: p4, objectUrl: "/sample/photo-4.svg", name: "sample-4.svg" },
-    [p5]: { id: p5, objectUrl: "/sample/photo-5.svg", name: "sample-5.svg" },
-    [p6]: { id: p6, objectUrl: "/sample/photo-6.svg", name: "sample-6.svg" },
+    [p1]: { id: p1, objectUrl: publicUrl("sample/photo-1.svg"), name: "sample-1.svg" },
+    [p2]: { id: p2, objectUrl: publicUrl("sample/photo-2.svg"), name: "sample-2.svg" },
+    [p3]: { id: p3, objectUrl: publicUrl("sample/photo-3.svg"), name: "sample-3.svg" },
+    [p4]: { id: p4, objectUrl: publicUrl("sample/photo-4.svg"), name: "sample-4.svg" },
+    [p5]: { id: p5, objectUrl: publicUrl("sample/photo-5.svg"), name: "sample-5.svg" },
+    [p6]: { id: p6, objectUrl: publicUrl("sample/photo-6.svg"), name: "sample-6.svg" },
   };
 
   const sections: TopicSection[] = [

@@ -4,7 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
+  const forGitHubPages = process.env.GITHUB_PAGES === "true";
   return {
+    // GitHub Pages は /リポジトリ名/ 配下で公開する
+    base: forGitHubPages ? "/gakkyu-dayori/" : "/",
     plugins: [react(), tailwindcss()],
     optimizeDeps: {
       include: ["heic-to"],

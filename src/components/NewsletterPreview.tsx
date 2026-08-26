@@ -1,5 +1,6 @@
 import type { Announcement, Issue, Photo, Settings, TopicSection } from "../types";
 import { chunkPhotos, formatWareki } from "../utils/format";
+import { publicUrl } from "../utils/public-url";
 import { sheetFontStyle, topicFontStyle } from "../utils/sheet-fonts";
 
 type Props = {
@@ -48,7 +49,7 @@ export function NewsletterPreview({
             <div className="paperclips" aria-hidden="true">
               <img
                 className="paperclips-img"
-                src="/paperclips.png"
+                src={publicUrl("paperclips.png")}
                 alt=""
               />
             </div>
@@ -95,17 +96,17 @@ export function NewsletterPreview({
                   <div className="topic-decos" aria-hidden="true">
                     <img
                       className="topic-deco deco-tape-red"
-                      src="/decor/tape-purple.png"
+                      src={publicUrl("decor/tape-purple.png")}
                       alt=""
                     />
                     <img
                       className="topic-deco deco-pencil"
-                      src="/decor/pencil.png"
+                      src={publicUrl("decor/pencil.png")}
                       alt=""
                     />
                     <img
                       className="topic-deco deco-eraser"
-                      src="/decor/eraser.png"
+                      src={publicUrl("decor/eraser.png")}
                       alt=""
                     />
                   </div>
@@ -114,12 +115,12 @@ export function NewsletterPreview({
                   <div className="topic-decos" aria-hidden="true">
                     <img
                       className="topic-deco deco-tape-green"
-                      src="/decor/tape-green.png"
+                      src={publicUrl("decor/tape-green.png")}
                       alt=""
                     />
                     <img
                       className="topic-deco deco-triangle"
-                      src="/decor/triangle.png"
+                      src={publicUrl("decor/triangle.png")}
                       alt=""
                     />
                   </div>

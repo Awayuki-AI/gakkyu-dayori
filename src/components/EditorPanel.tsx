@@ -381,7 +381,7 @@ export function EditorPanel({
         </label>
         <p className="mb-2.5 text-xs leading-relaxed text-muted">
           Google Cloud（個人アカウント）で「Drive API」を有効にし、OAuthクライアント（ウェブ）を作り、JavaScript生成元に
-          http://localhost:5173 を入れてください。同意画面のテストユーザーに、保存に使うGoogleアカウントを追加します。
+          http://localhost:5173 と公開URL（例: https://awayuki-ai.github.io / https://gakkyu-dayori.vercel.app）を入れてください。同意画面のテストユーザーに、保存に使うGoogleアカウントを追加します。
           初回やセキュリティ通知のあと、「Google hasn't verified this app」と出たら「詳細」→「（アプリ名）に移動」で続行できます（未確認の個人用アプリの正常な表示です）。
         </p>
         <label className={labelClass}>
