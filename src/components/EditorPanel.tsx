@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { defaultSettings } from "../settings";
 import type {
   AccentSeason,
   Announcement,
@@ -7,6 +8,7 @@ import type {
   Settings,
   TopicSection,
 } from "../types";
+import { clampFontPt, DEFAULT_BODY_FONT_PT } from "../utils/sheet-fonts";
 
 type Props = {
   settings: Settings;
@@ -32,6 +34,39 @@ type Props = {
 const fieldClass =
   "mt-1 w-full rounded-lg border border-[#c5d3de] bg-white px-2.5 py-2 text-[0.9rem] text-ink outline-none focus:border-[#3b82c4]";
 const labelClass = "mb-2.5 block text-[0.82rem] text-muted";
+
+function FontSizeInput({
+  label,
+  value,
+  min,
+  max,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  fallback: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <label className={labelClass}>
+      {label}
+      <input
+        className={fieldClass}
+        type="number"
+        min={min}
+        max={max}
+        step={1}
+        value={value}
+        onChange={(e) =>
+          onChange(clampFontPt(Number(e.target.value), min, max, fallback))
+        }
+      />
+    </label>
+  );
+}
 
 function PhotoPicker({
   sectionId,
@@ -167,6 +202,26 @@ function TopicEditor({
       </label>
       <PhotoPicker sectionId={section.id} onAddPhotos={onAddPhotos} />
       {section.photoIds.length > 0 && (
+        <label className={labelClass}>
+          写真の見せ方
+          <select
+            className={fieldClass}
+            value={section.photoFit ?? "contain"}
+            onChange={(e) =>
+              onSectionChange(section.id, {
+                photoFit: e.target.value as TopicSection["photoFit"],
+              })
+            }
+          >
+            <option value="contain">全体を見せる（集合写真向け・大きく表示）</option>
+            <option value="cover">枠いっぱい（はみ出しを切る）</option>
+          </select>
+          <p className="mt-1 text-xs text-muted">
+            集合写真は1枚だけ入れると大きく載ります。3枚並べると1枚あたりが小さくなります。
+          </p>
+        </label>
+      )}
+      {section.photoIds.length > 0 && (
         <ul className="mb-2 flex list-none flex-col gap-1.5 p-0">
           {section.photoIds.map((id) => (
             <li
@@ -187,6 +242,17 @@ function TopicEditor({
           ))}
         </ul>
       )}
+      <FontSizeInput
+        label="本文のポイント数"
+        value={section.bodyFontPt ?? DEFAULT_BODY_FONT_PT}
+        min={8}
+        max={16}
+        fallback={DEFAULT_BODY_FONT_PT}
+        onChange={(bodyFontPt) => onSectionChange(section.id, { bodyFontPt })}
+      />
+      <p className="mb-2 mt-0 text-xs text-muted">
+        文量と写真のバランスを見ながら、トピックごとに調整できます。
+      </p>
       <p className="m-0 text-xs text-muted">
         プレビュー上で写真をドラッグすると並べ替えできます。
       </p>
@@ -230,7 +296,7 @@ export function EditorPanel({
           学級便り
         </h1>
         <p className="mb-3 mt-1.5 text-[0.85rem] text-muted">
-          写真は端末内だけで処理します。Drive保存のときだけ、選んだGoogleアカウントのドライブへ送ります。
+          写真は端末内だけで処理します。Drive保存のときだけ、選んだGoogleアカウントのドライブへ送ります。本文・写真の下書きはこのブラウザに自動保存されます。
         </p>
         <button
           type="button"
@@ -316,6 +382,7 @@ export function EditorPanel({
         <p className="mb-2.5 text-xs leading-relaxed text-muted">
           Google Cloud（個人アカウント）で「Drive API」を有効にし、OAuthクライアント（ウェブ）を作り、JavaScript生成元に
           http://localhost:5173 を入れてください。同意画面のテストユーザーに、保存に使うGoogleアカウントを追加します。
+          初回やセキュリティ通知のあと、「Google hasn't verified this app」と出たら「詳細」→「（アプリ名）に移動」で続行できます（未確認の個人用アプリの正常な表示です）。
         </p>
         <label className={labelClass}>
           日付
@@ -359,8 +426,81 @@ export function EditorPanel({
             <option value="winter">冬（ブルーグレー）</option>
           </select>
         </label>
+        <details className="mb-2.5 rounded-lg border border-[#c5d3de] bg-white px-2.5 py-2">
+          <summary className="cursor-pointer text-[0.82rem] font-medium text-[#3b82c4]">
+            文字サイズ（pt）
+          </summary>
+          <div className="mt-2">
+            <FontSizeInput
+              label="シリーズ名（らしさなど）"
+              value={settings.fontSeriesTitlePt}
+              min={28}
+              max={56}
+              fallback={defaultSettings.fontSeriesTitlePt}
+              onChange={(fontSeriesTitlePt) =>
+                onSettingsChange({ ...settings, fontSeriesTitlePt })
+              }
+            />
+            <FontSizeInput
+              label="学校名・学級名"
+              value={settings.fontSchoolLinePt}
+              min={8}
+              max={20}
+              fallback={defaultSettings.fontSchoolLinePt}
+              onChange={(fontSchoolLinePt) =>
+                onSettingsChange({ ...settings, fontSchoolLinePt })
+              }
+            />
+            <FontSizeInput
+              label="日付・号数"
+              value={settings.fontHeaderIssuePt}
+              min={10}
+              max={24}
+              fallback={defaultSettings.fontHeaderIssuePt}
+              onChange={(fontHeaderIssuePt) =>
+                onSettingsChange({ ...settings, fontHeaderIssuePt })
+              }
+            />
+            <FontSizeInput
+              label="トピック見出し・お知らせ見出し"
+              value={settings.fontTopicTitlePt}
+              min={12}
+              max={28}
+              fallback={defaultSettings.fontTopicTitlePt}
+              onChange={(fontTopicTitlePt) =>
+                onSettingsChange({ ...settings, fontTopicTitlePt })
+              }
+            />
+            <FontSizeInput
+              label="お知らせ本文"
+              value={settings.fontAnnouncementBodyPt}
+              min={8}
+              max={16}
+              fallback={defaultSettings.fontAnnouncementBodyPt}
+              onChange={(fontAnnouncementBodyPt) =>
+                onSettingsChange({ ...settings, fontAnnouncementBodyPt })
+              }
+            />
+            <button
+              type="button"
+              className="mt-1 w-full rounded-full border border-[#c5d3de] px-3 py-1.5 text-xs text-muted hover:border-[#3b82c4] hover:text-[#3b82c4]"
+              onClick={() =>
+                onSettingsChange({
+                  ...settings,
+                  fontSeriesTitlePt: defaultSettings.fontSeriesTitlePt,
+                  fontSchoolLinePt: defaultSettings.fontSchoolLinePt,
+                  fontHeaderIssuePt: defaultSettings.fontHeaderIssuePt,
+                  fontTopicTitlePt: defaultSettings.fontTopicTitlePt,
+                  fontAnnouncementBodyPt: defaultSettings.fontAnnouncementBodyPt,
+                })
+              }
+            >
+              文字サイズを標準に戻す
+            </button>
+          </div>
+        </details>
         <p className="m-0 text-xs text-muted">
-          学校名・学級名・シリーズ名・共有先・クライアントID・季節はブラウザに保存。号数は出力後に+1されます。
+          学校名・学級名・シリーズ名・文字サイズ・共有先・クライアントID・季節はブラウザに保存。号数は出力後に+1されます。
         </p>
       </details>
 

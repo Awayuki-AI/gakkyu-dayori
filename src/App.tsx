@@ -12,6 +12,7 @@ import type {
 import { createId, todayIsoDate } from "./utils/format";
 import { createDemoSections, demoAnnouncement } from "./utils/demo-content";
 import { fileToObjectUrl, isLikelyImageFile } from "./utils/image-file";
+import { loadDraft, loadDraftTextSync, saveDraft, hasBlobPhotosInDraft } from "./utils/draft-storage";
 import {
   ensureGoogleDriveLogin,
   isLikelyEmail,
@@ -33,24 +34,56 @@ function createSection(
     title: "",
     body: "",
     photoIds: [],
+    photoFit: "contain",
+    bodyFontPt: 11,
     tone,
     icon,
   };
 }
 
+function initialEditorState(): {
+  issue: Issue;
+  sections: TopicSection[];
+  photos: Record<string, Photo>;
+  includeAnnouncement: boolean;
+  announcement: Announcement;
+  draftReady: boolean;
+} {
+  const saved = loadDraftTextSync();
+  if (saved) {
+    return {
+      issue: saved.issue,
+      sections: saved.sections,
+      photos: saved.urlPhotos,
+      includeAnnouncement: saved.includeAnnouncement,
+      announcement: saved.announcement,
+      draftReady: !hasBlobPhotosInDraft(),
+    };
+  }
+  const demo = createDemoSections();
+  return {
+    issue: { date: todayIsoDate(), issueNumber: loadSettings().nextIssueNumber },
+    sections: demo.sections,
+    photos: demo.photos,
+    includeAnnouncement: true,
+    announcement: demoAnnouncement,
+    draftReady: true,
+  };
+}
+
 export default function App() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
-  const [issue, setIssue] = useState<Issue>(() => ({
-    date: todayIsoDate(),
-    issueNumber: loadSettings().nextIssueNumber,
-  }));
-  const [demo] = useState(() => createDemoSections());
-  const [sections, setSections] = useState<TopicSection[]>(() => demo.sections);
-  const [photos, setPhotos] = useState<Record<string, Photo>>(() => demo.photos);
-  const [includeAnnouncement, setIncludeAnnouncement] = useState(true);
-  const [announcement, setAnnouncement] = useState<Announcement>(
-    () => demoAnnouncement,
+  const [initial] = useState(() => initialEditorState());
+  const [issue, setIssue] = useState<Issue>(() => initial.issue);
+  const [sections, setSections] = useState<TopicSection[]>(() => initial.sections);
+  const [photos, setPhotos] = useState<Record<string, Photo>>(() => initial.photos);
+  const [includeAnnouncement, setIncludeAnnouncement] = useState(
+    () => initial.includeAnnouncement,
   );
+  const [announcement, setAnnouncement] = useState<Announcement>(
+    () => initial.announcement,
+  );
+  const [draftReady, setDraftReady] = useState(() => initial.draftReady);
   const [exporting, setExporting] = useState(false);
   const [dragState, setDragState] = useState<{
     photoId: string;
@@ -68,6 +101,42 @@ export default function App() {
   useEffect(() => {
     preloadGoogleIdentity();
   }, []);
+
+  useEffect(() => {
+    if (draftReady) return;
+    let cancelled = false;
+    void loadDraft().then((draft) => {
+      if (cancelled) return;
+      if (draft) {
+        setPhotos((prev) => {
+          Object.values(prev).forEach((p) => {
+            if (p.objectUrl.startsWith("blob:")) {
+              URL.revokeObjectURL(p.objectUrl);
+            }
+          });
+          return draft.photos;
+        });
+      }
+      setDraftReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [draftReady]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    const timer = window.setTimeout(() => {
+      void saveDraft({
+        issue,
+        sections,
+        photos,
+        includeAnnouncement,
+        announcement,
+      });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [draftReady, issue, sections, photos, includeAnnouncement, announcement]);
 
   useEffect(() => {
     return () => {

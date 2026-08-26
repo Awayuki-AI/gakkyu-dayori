@@ -11,6 +11,11 @@ export const defaultSettings: Settings = {
   schoolEmail: "",
   googleClientId: "",
   accentSeason: "spring",
+  fontSeriesTitlePt: 42,
+  fontSchoolLinePt: 12,
+  fontHeaderIssuePt: 16,
+  fontTopicTitlePt: 19,
+  fontAnnouncementBodyPt: 11,
 };
 
 export function loadSettings(): Settings {
@@ -21,6 +26,12 @@ export function loadSettings(): Settings {
       ? (JSON.parse(raw) as Partial<Settings>)
       : ({} as Partial<Settings>);
     const merged = { ...defaultSettings, ...parsed };
+    if (
+      typeof (parsed as { fontBodyPt?: number }).fontBodyPt === "number" &&
+      parsed.fontAnnouncementBodyPt === undefined
+    ) {
+      merged.fontAnnouncementBodyPt = (parsed as { fontBodyPt: number }).fontBodyPt;
+    }
     if (!isLikelyGoogleClientId(merged.googleClientId) && envId) {
       merged.googleClientId = envId;
     }

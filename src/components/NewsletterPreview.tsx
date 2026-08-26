@@ -1,5 +1,6 @@
 import type { Announcement, Issue, Photo, Settings, TopicSection } from "../types";
 import { chunkPhotos, formatWareki } from "../utils/format";
+import { sheetFontStyle, topicFontStyle } from "../utils/sheet-fonts";
 
 type Props = {
   settings: Settings;
@@ -38,6 +39,7 @@ export function NewsletterPreview({
     <article
       className="sheet"
       data-accent={settings.accentSeason}
+      style={sheetFontStyle(settings)}
       aria-label="学級便りプレビュー"
     >
       <div className="sheet-inner">
@@ -76,6 +78,7 @@ export function NewsletterPreview({
               <section
                 key={section.id}
                 className={`topic topic-${section.tone}`}
+                style={topicFontStyle(section)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -132,7 +135,10 @@ export function NewsletterPreview({
                   </>
                 ) : null}
                 {rows.length > 0 ? (
-                  <div className="photo-stacks">
+                  <div
+                    className="photo-stacks"
+                    data-photo-fit={section.photoFit ?? "contain"}
+                  >
                     {rows.map((row, rowIndex) => (
                       <div
                         key={`${section.id}-row-${rowIndex}`}
@@ -173,11 +179,7 @@ export function NewsletterPreview({
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="photo-drop-hint photo-drop-hint-quiet">
-                    写真未追加
-                  </div>
-                )}
+                ) : null}
               </section>
             );
           })}

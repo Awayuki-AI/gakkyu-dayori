@@ -13,6 +13,11 @@
   --heading-shadow: rgba(255, 255, 255, 0.95);
   --font-heading: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
   --font-body: "BIZ UDGothic", "Hiragino Sans", sans-serif;
+  --fs-series: 42pt;
+  --fs-school: 12pt;
+  --fs-issue: 16pt;
+  --fs-topic-title: 19pt;
+  --fs-body: 11pt;
 
   width: 794px;
   height: 1123px;
@@ -102,7 +107,7 @@
   margin: -6px 0 0;
   padding: 0 0 2px;
   font-family: var(--font-heading);
-  font-size: 42pt;
+  font-size: var(--fs-series);
   font-weight: 700;
   letter-spacing: 0.14em;
   line-height: 1.05;
@@ -120,7 +125,7 @@
 
 .school-line {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--fs-school);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -128,7 +133,7 @@
 .header-issue {
   text-align: center;
   padding-top: 6px;
-  font-size: 16pt;
+  font-size: var(--fs-issue);
   line-height: 1.4;
   font-weight: 600;
   white-space: nowrap;
@@ -257,7 +262,7 @@
   align-items: center;
   gap: 8px;
   font-family: var(--font-heading);
-  font-size: 1.55rem;
+  font-size: var(--fs-topic-title);
   font-weight: 700;
   color: var(--heading);
   line-height: 1.3;
@@ -272,7 +277,7 @@
 .topic-body {
   margin: 0;
   padding: 0 2px 2px;
-  font-size: 0.86rem;
+  font-size: var(--fs-topic-body, var(--fs-body));
   line-height: 1.75;
   color: var(--ink);
   white-space: pre-wrap;
@@ -287,17 +292,34 @@
 .photo-stacks {
   display: flex;
   min-height: 0;
-  flex: 1;
   flex-direction: column;
   gap: 8px;
   margin-top: 2px;
 }
 
+.photo-stacks[data-photo-fit="contain"] {
+  flex: 1;
+  min-height: 0;
+}
+
+.photo-stacks[data-photo-fit="cover"] {
+  flex: 1;
+}
+
 .photo-row {
   display: grid;
   min-height: 0;
-  flex: 1;
   gap: 8px;
+}
+
+.photo-stacks[data-photo-fit="cover"] .photo-row {
+  flex: 1;
+}
+
+.photo-stacks[data-photo-fit="contain"] .photo-row {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
 }
 
 .photo-row.count-1 {
@@ -317,12 +339,28 @@
 
 .photo-cell {
   position: relative;
-  height: 100%;
-  min-height: 84px;
   cursor: grab;
   overflow: hidden;
   border-radius: 6px;
   background: #cfd8e0;
+}
+
+.photo-stacks[data-photo-fit="contain"] .photo-cell {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.photo-stacks[data-photo-fit="contain"] .photo-row.count-1 {
+  max-width: 90%;
+}
+
+.photo-stacks[data-photo-fit="cover"] .photo-cell {
+  height: 100%;
+  min-height: 84px;
 }
 
 .photo-cell.dragging {
@@ -332,26 +370,21 @@
 .photo-cell img {
   display: block;
   width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.photo-stacks[data-photo-fit="contain"] .photo-cell img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.photo-stacks[data-photo-fit="cover"] .photo-cell img {
   height: 100%;
   object-fit: cover;
-}
-
-.photo-drop-hint {
-  border: 2px dashed #b7c2cc;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.55);
-  padding: 1.2rem;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.photo-drop-hint-quiet {
-  border-style: dotted;
-  background: rgba(255, 255, 255, 0.35);
-  color: #9aa6b0;
-  font-size: 0.78rem;
-  padding: 0.85rem;
 }
 
 .announcement {
@@ -367,14 +400,14 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-heading);
-  font-size: 1.05rem;
+  font-size: var(--fs-topic-title);
   font-weight: 700;
   color: var(--heading);
 }
 
 .announcement-body {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--ink);
   white-space: pre-wrap;
