@@ -107,16 +107,33 @@ function oauthErrorMessage(resp: { error?: string }): string {
 
 function gisErrorMessage(err: { type?: string; message?: string }): string {
   if (err.type === "popup_failed_to_open") {
-    return "ログイン画面がポップアップブロックされました。ブラウザで localhost:5173 のポップアップを許可してください。";
+    return (
+      "ログイン画面がポップアップブロックされました。\n" +
+      "アドレスバー右端のポップアップアイコンから「許可」を選び、もう一度「Googleドライブに保存」を押してください。"
+    );
   }
   return err.message || "Googleアカウントのログインに失敗しました。";
 }
 
-async function requestAccessToken(
-  clientId: string,
-  prompt: "" | "consent",
-): Promise<string> {
-  const oauth2 = await loadGis();
+/**
+ * クリック直後に同期的に呼ぶこと（await のあとだとポップアップがブロックされる）。
+ * GIS 未読み込みのときは準備完了を待たず、再クリックを促す。
+ */
+export function ensureGoogleDriveLogin(clientId: string): Promise<void> {
+  if (accessToken) return Promise.resolve();
+
+  const oauth2 = window.google?.accounts?.oauth2;
+  if (!oauth2) {
+    void loadGis().catch(() => {
+      gisLoading = null;
+    });
+    return Promise.reject(
+      new Error(
+        "Googleログインの準備中です。数秒待ってから、もう一度「Googleドライブに保存」を押してください。",
+      ),
+    );
+  }
+
   return new Promise((resolve, reject) => {
     const client = oauth2.initTokenClient({
       client_id: clientId,
@@ -127,39 +144,24 @@ async function requestAccessToken(
           return;
         }
         accessToken = resp.access_token;
-        resolve(resp.access_token);
+        resolve();
       },
       error_callback: (err) => {
         reject(new Error(gisErrorMessage(err)));
       },
     });
-    client.requestAccessToken({ prompt });
+    // ユーザー操作の直後に同期呼び出しする（confirm / await の後は不可）
+    client.requestAccessToken({ prompt: "" });
   });
 }
 
-type GetTokenOptions = {
-  /** 同意画面を必ず表示する（セキュリティ通知後の再許可など） */
-  forceConsent?: boolean;
-};
-
-async function getAccessToken(
-  clientId: string,
-  options: GetTokenOptions = {},
-): Promise<string> {
-  if (accessToken && !options.forceConsent) return accessToken;
-  if (options.forceConsent) accessToken = null;
-
-  try {
-    return await requestAccessToken(clientId, options.forceConsent ? "consent" : "");
-  } catch (firstErr) {
-    if (options.forceConsent) throw firstErr;
-    accessToken = null;
-    return requestAccessToken(clientId, "consent");
-  }
-}
-
-export async function ensureGoogleDriveLogin(clientId: string): Promise<void> {
-  await getAccessToken(clientId);
+async function getAccessToken(clientId: string): Promise<string> {
+  if (accessToken) return accessToken;
+  // 保存処理の途中ではポップアップを開けないため、再クリックを促す
+  void clientId;
+  throw new Error(
+    "Googleにログインしていません。もう一度「Googleドライブに保存」を押してください。",
+  );
 }
 
 export type DriveFileInfo = {
@@ -229,18 +231,14 @@ export async function uploadPdfToDrive(options: {
   filename: string;
   pdfBlob: Blob;
 }): Promise<DriveFileInfo> {
-  let token = await getAccessToken(options.clientId);
-  let res = await uploadPdfWithToken(token, options.filename, options.pdfBlob);
+  const token = await getAccessToken(options.clientId);
+  const res = await uploadPdfWithToken(token, options.filename, options.pdfBlob);
 
   if (res.status === 401) {
     accessToken = null;
-    token = await getAccessToken(options.clientId, { forceConsent: true });
-    res = await uploadPdfWithToken(token, options.filename, options.pdfBlob);
-  }
-
-  if (res.status === 401) {
-    accessToken = null;
-    throw new Error("ログインの期限が切れました。もう一度お試しください。");
+    throw new Error(
+      "ログインの期限が切れました。もう一度「Googleドライブに保存」を押してください。",
+    );
   }
   if (!res.ok) {
     throw new Error(await driveApiErrorMessage(res));

@@ -313,11 +313,8 @@ export default function App() {
     const node = previewRef.current?.querySelector(".sheet");
     if (!(node instanceof HTMLElement)) return;
 
-    const ok = window.confirm(
-      "個人のGoogleアカウントでログインし、PDFをマイドライブへ保存します。学校のアドレスを設定していれば、続けて共有します。",
-    );
-    if (!ok) return;
-
+    // confirm や await のあとにログインするとポップアップがブロックされるため、
+    // ボタン押下の直後にログインを開始する
     const login = ensureGoogleDriveLogin(clientId);
     setExporting(true);
     try {
