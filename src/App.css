@@ -329,8 +329,12 @@
   grid-template-columns: 1fr;
 }
 
+/* 2枚は上下に積む（横並びだと小さくなりすぎるため） */
 .photo-row.count-2 {
-  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  max-width: 90%;
+  margin: 0 auto;
+  grid-template-columns: 1fr;
 }
 
 .photo-row.count-3 {
